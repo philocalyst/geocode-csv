@@ -12,6 +12,7 @@ repository = "https://github.com/faradayio/geocode-csv"
 documentation = "https://docs.rs/libpostal-rust"
 
 [dependencies]
+celes = "2.6.0"
 lazy_static = "1.4.0"
 libpostal-sys = { version = "0.1.1", path = "../libpostal-sys" }
 thiserror = "1.0.30"

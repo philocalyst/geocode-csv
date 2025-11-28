@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::num::NonZeroU32;
 use std::str::FromStr;
 
+use celes::Country;
+
 /// A structured, strongly-typed postal address with all possible components
 /// that libpostal can extract.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -271,49 +273,6 @@ impl FromStr for UsStateCode {
     }
 }
 
-/// Country representation with ISO codes
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Country {
-    /// ISO 3166-1 alpha-2 code (e.g., "US", "CA", "GB")
-    Iso2(String),
-    /// ISO 3166-1 alpha-3 code (e.g., "USA", "CAN", "GBR")
-    Iso3(String),
-    /// Full country name
-    Name(String),
-}
-
-impl Country {
-    pub fn as_str(&self) -> &str {
-        match self {
-            Country::Iso2(s) | Country::Iso3(s) | Country::Name(s) => s.as_str(),
-        }
-    }
-
-    /// Try to determine country type from string length and content
-    pub fn from_string(s: String) -> Self {
-        match s.len() {
-            2 => Country::Iso2(s.to_uppercase()),
-            3 => {
-                // Could be ISO3 or abbreviation like "USA"
-                if s.chars()
-                    .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit())
-                {
-                    Country::Iso3(s.to_uppercase())
-                } else {
-                    Country::Name(s)
-                }
-            }
-            _ => Country::Name(s),
-        }
-    }
-}
-
-impl std::fmt::Display for Country {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.as_str())
-    }
-}
-
 impl Address {
     /// Convert from the libpostal HashMap format to a structured Address
     pub fn from_parsed(parsed: HashMap<String, String>) -> Self {
@@ -347,7 +306,10 @@ impl Address {
                         })
                 }
                 "state_district" => addr.state_district = Some(value),
-                "country" => addr.country = Some(Country::from_string(value)),
+                "country" => {
+                    addr.country =
+                        Some(Country::from_str(&value).expect("libpostal lied"))
+                }
                 "country_region" => addr.country_region = Some(value),
                 "world_region" => addr.world_region = Some(value),
                 "neighbourhood" => addr.neighbourhood = Some(value),
@@ -417,7 +379,6 @@ mod tests {
             addr.postcode.as_ref().map(|p| p),
             Some(&NonZeroU32::new(11216).unwrap())
         );
-        assert!(matches!(addr.country, Some(Country::Iso3(_))));
     }
 
     #[test]
