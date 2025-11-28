@@ -45,9 +45,12 @@ use libpostal_sys::{
     libpostal_get_default_options, libpostal_parse_address, size_t, GLOBAL_LOCK,
 };
 
+mod address;
 mod errors;
 mod init;
 mod probe;
+
+use crate::address::Address;
 
 pub use self::errors::Error;
 
@@ -61,10 +64,7 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 pub struct ParseAddressOptions {}
 
 /// Parse an address into its component values.
-pub fn parse_address(
-    addr: &str,
-    _opt: &ParseAddressOptions,
-) -> Result<HashMap<String, String>> {
+pub fn parse_address(addr: &str, _opt: &ParseAddressOptions) -> Result<Address> {
     // We need to hold onto this lock whenever we're calling libpostal.
     let mut initialization_state = GLOBAL_LOCK.lock().expect("mutex poisoned");
     unsafe { initialize_libpostal(initialization_state.deref_mut()) }?;
@@ -100,7 +100,7 @@ pub fn parse_address(
     // Clean up our C data structure.
     unsafe { libpostal_address_parser_response_destroy(parsed) };
 
-    Ok(result)
+    Ok(Address::from_parsed(result))
 }
 
 /// Options for use with `expand_address`.
@@ -151,6 +151,8 @@ pub fn expand_address(addr: &str, _opt: &ExpandAddressOptions) -> Result<Vec<Str
 
 #[cfg(test)]
 mod tests {
+    use crate::address::UsStateCode::NY;
+
     use super::*;
 
     #[test]
@@ -159,7 +161,7 @@ mod tests {
         let addr = "781 Franklin Ave Crown Heights Brooklyn NYC NY 11216 USA";
         let opt = ParseAddressOptions::default();
         let parsed = parse_address(addr, &opt).unwrap();
-        assert_eq!(parsed.get("state"), Some(&"ny".to_owned()));
+        assert_eq!(parsed.state, Some(address::State::UsStateCode(NY)));
     }
 
     #[test]
