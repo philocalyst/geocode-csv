@@ -16,12 +16,11 @@
 //! Once this is done, you can parse addresses as follows:
 //!
 //! ```no_run
-//! use libpostal_rust::{ParseAddressOptions, parse_address};
-//!
+//! use libpostal_rust::{ParseAddressOptions, address, address::UsStateCode::NY, parse_address};
 //! let addr = "781 Franklin Ave Crown Heights Brooklyn NYC NY 11216 USA";
 //! let opt = ParseAddressOptions::default();
 //! let parsed = parse_address(addr, &opt).unwrap();
-//! assert_eq!(parsed.get("state"), Some(&"ny".to_owned()));
+//! assert_eq!(parsed.state, Some(address::State::UsStateCode(NY)));
 //! ```
 //!
 //! You can turn `parsed` back into a nicely-formatted address (almost anywhere
@@ -45,7 +44,7 @@ use libpostal_sys::{
     libpostal_get_default_options, libpostal_parse_address, size_t, GLOBAL_LOCK,
 };
 
-mod address;
+pub mod address;
 mod errors;
 mod init;
 mod probe;
@@ -156,11 +155,11 @@ mod tests {
     use super::*;
 
     #[test]
-    #[ignore]
     fn parse_address_returns_components() {
         let addr = "781 Franklin Ave Crown Heights Brooklyn NYC NY 11216 USA";
         let opt = ParseAddressOptions::default();
         let parsed = parse_address(addr, &opt).unwrap();
+        dbg!(&parsed);
         assert_eq!(parsed.state, Some(address::State::UsStateCode(NY)));
     }
 
