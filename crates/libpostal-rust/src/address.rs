@@ -9,7 +9,7 @@ use celes::Country;
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Address {
     /// House number (e.g., "781")
-    pub house_number: Option<String>,
+    pub house_number: Option<NonZeroU32>,
 
     /// Road/street name (e.g., "Franklin Ave")
     pub road: Option<String>,
@@ -30,7 +30,7 @@ pub struct Address {
     pub entrance: Option<String>,
 
     /// P.O. Box number
-    pub po_box: Option<String>,
+    pub po_box: Option<NonZeroU32>,
 
     /// Postal/ZIP code
     pub postcode: Option<NonZeroU32>,
@@ -280,14 +280,14 @@ impl Address {
 
         for (key, value) in parsed {
             match key.as_str() {
-                "house_number" => addr.house_number = Some(value),
+                "house_number" => addr.house_number = Some(value.parse().unwrap()),
                 "road" => addr.road = Some(value),
                 "unit" => addr.unit = Some(value),
                 "house" => addr.house = Some(value),
                 "level" => addr.level = Some(value),
                 "staircase" => addr.staircase = Some(value),
                 "entrance" => addr.entrance = Some(value),
-                "po_box" => addr.po_box = Some(value),
+                "po_box" => addr.po_box = Some(value.parse().unwrap()),
                 "postcode" => addr.postcode = Some(value.parse().unwrap()),
                 "suburb" => addr.suburb = Some(value),
                 "city" => addr.city = Some(value),
@@ -324,10 +324,10 @@ impl Address {
 
     /// Get a single-line representation of the address
     pub fn to_single_line(&self) -> String {
-        let mut parts = Vec::new();
+        let mut parts: Vec<String> = Vec::new();
 
         if let Some(ref num) = self.house_number {
-            parts.push(num.clone());
+            parts.push(num.to_string());
         }
         if let Some(ref road) = self.road {
             parts.push(road.clone());
@@ -368,7 +368,7 @@ mod tests {
 
         let addr = Address::from_parsed(map);
 
-        assert_eq!(addr.house_number, Some("781".to_string()));
+        assert_eq!(addr.house_number, Some(NonZeroU32::new(781).unwrap()));
         assert_eq!(addr.road, Some("Franklin Ave".to_string()));
         assert_eq!(addr.city, Some("Brooklyn".to_string()));
         assert!(matches!(
@@ -392,7 +392,7 @@ mod tests {
     #[test]
     fn test_single_line_formatting() {
         let addr = Address {
-            house_number: Some("123".to_string()),
+            house_number: Some(NonZeroU32::new(123).unwrap()),
             road: Some("Main St".to_string()),
             city: Some("Springfield".to_string()),
             state: Some(State::UsStateCode(UsStateCode::IL)),
