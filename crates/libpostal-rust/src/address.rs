@@ -31,7 +31,7 @@ pub struct Address {
     pub po_box: Option<String>,
 
     /// Postal/ZIP code
-    pub postcode: Option<Postcode>,
+    pub postcode: Option<NonZeroU32>,
 
     /// Suburb or neighborhood (e.g., "Crown Heights")
     pub suburb: Option<String>,
@@ -68,33 +68,6 @@ pub struct Address {
 
     /// Near location reference (e.g., "near Central Park")
     pub near: Option<String>,
-}
-
-/// Postal/ZIP code with validation
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Postcode(String);
-
-impl Postcode {
-    /// Create a new postcode. Returns None if empty.
-    pub fn new(code: impl Into<String>) -> Option<Self> {
-        let code = code.into();
-        if code.trim().is_empty() {
-            None
-        } else {
-            Some(Postcode(code))
-        }
-    }
-
-    /// Get the postcode as a string slice
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-}
-
-impl std::fmt::Display for Postcode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
 }
 
 /// State/province representation
@@ -356,7 +329,7 @@ impl Address {
                 "staircase" => addr.staircase = Some(value),
                 "entrance" => addr.entrance = Some(value),
                 "po_box" => addr.po_box = Some(value),
-                "postcode" => addr.postcode = Postcode::new(value),
+                "postcode" => addr.postcode = Some(value.parse().unwrap()),
                 "suburb" => addr.suburb = Some(value),
                 "city" => addr.city = Some(value),
                 "city_district" => addr.city_district = Some(value),
@@ -440,7 +413,10 @@ mod tests {
             addr.state,
             Some(State::UsStateCode(UsStateCode::NY))
         ));
-        assert_eq!(addr.postcode.as_ref().map(|p| p.as_str()), Some("11216"));
+        assert_eq!(
+            addr.postcode.as_ref().map(|p| p),
+            Some(&NonZeroU32::new(11216).unwrap())
+        );
         assert!(matches!(addr.country, Some(Country::Iso3(_))));
     }
 
@@ -459,7 +435,7 @@ mod tests {
             road: Some("Main St".to_string()),
             city: Some("Springfield".to_string()),
             state: Some(State::UsStateCode(UsStateCode::IL)),
-            postcode: Postcode::new("62701"),
+            postcode: NonZeroU32::new(62701),
             ..Default::default()
         };
 
